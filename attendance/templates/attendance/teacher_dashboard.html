@@ -1,0 +1,76 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<h1>Teacher Dashboard</h1>
+
+<div class="row">
+  <!-- Save Attendance (single entry) -->
+  <div class="col-md-6">
+    <div class="card mb-3 p-3">
+      <h5>Save Attendance</h5>
+      <form method="post" action="{% url 'save_attendance' %}">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">Roll Number</label>
+          <input class="form-control" name="roll_number" placeholder="e.g. CSE2025-001" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Date (optional)</label>
+          <input type="date" class="form-control" name="date">
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Status</label>
+          <select name="attendance" class="form-select">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Save Attendance</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Save Grade (single entry) -->
+  <div class="col-md-6">
+    <div class="card mb-3 p-3">
+      <h5>Save Grade</h5>
+      <form method="post" action="{% url 'save_grade' %}">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">Roll Number</label>
+          <input class="form-control" name="roll_number" placeholder="e.g. CSE2025-001" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Subject</label>
+          <input class="form-control" name="subject" value="CD" default="CD">
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Marks</label>
+          <input type="number" class="form-control" name="marks" required>
+        </div>
+        <button class="btn btn-success" type="submit">Save Grade</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h4>Students (latest attendance & grade)</h4>
+<table class="table table-bordered">
+  <thead>
+    <tr><th>Roll</th><th>Name</th><th>Latest Attendance</th><th>Latest Grade</th></tr>
+  </thead>
+  <tbody>
+    {% for s in students %}
+      <tr>
+        <td>{{ s.roll_number }}</td>
+        <td>{{ s.user.get_full_name|default:s.user.username }}</td>
+        <td>{{ s.attendance_status }}</td>
+        <td>{{ s.grade_value }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">No students yet</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

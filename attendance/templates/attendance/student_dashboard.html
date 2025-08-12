@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="text-center mb-4 text-primary">🎓 Student Dashboard</h2>
+
+  <!-- Student Info Card -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title text-secondary">👤 Student Information</h5>
+      <p><strong>Name:</strong> {{ student.user.username }}</p>
+      <p><strong>Roll Number:</strong> {{ student.roll_number }}</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Attendance Section -->
+    <div class="col-md-6 mb-4">
+      <div class="card border-success shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-success">📅 Attendance</h5>
+          <p><strong>Total Days:</strong>{{attendance_total}}</p>
+          <p class="text-success"><strong>Present:</strong> {{ attendance_present }}</p>
+          <p class="text-danger"><strong>Absent:</strong> {{ attendance_absent }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grades Section -->
+    <div class="col-md-6 mb-4">
+      <div class="card border-info shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-info">📊 Recent Grades</h5>
+          <ul class="list-group">
+            {% for g in grades %}
+              <li class="list-group-item d-flex justify-content-between">
+                <span>{{ g.subject }}</span>
+                <span class="badge bg-primary">{{ g.marks }}</span>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">No grades yet</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
