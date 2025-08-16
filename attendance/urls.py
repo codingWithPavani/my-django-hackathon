@@ -24,7 +24,8 @@ urlpatterns = [
     path('student/', views.student_dashboard, name='student_dashboard'),
 
     path('', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    # path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', views.delete_and_logout, name='logout'),
     path('redirect-user/', views.redirect_user, name='redirect_user'),
 
     path('teacher/', views.teacher_dashboard, name='teacher_dashboard'),

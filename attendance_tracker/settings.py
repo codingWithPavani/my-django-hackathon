@@ -73,22 +73,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'attendance_tracker.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'hackathon_db',
+        'USER': 'hackathon_user',
+        'PASSWORD': 'pawany12',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+        default='postgresql://my_hackathon_db_user:4FYAOWthKgVESxaTC5d4OM6giHHLAFZF@dpg-d2diubgdl3ps73b34vbg-a/my_hackathon_db'
     )
 }
+
 
 
 
@@ -138,3 +139,7 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = "redirect_user"
 LOGOUT_REDIRECT_URL = "login"
 
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

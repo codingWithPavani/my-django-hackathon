@@ -41,7 +41,7 @@
         </div>
         <div class="mb-2">
           <label class="form-label">Subject</label>
-          <input class="form-control" name="subject" value="CD" default="CD">
+          <input class="form-control" name="subject" value="CD">
         </div>
         <div class="mb-2">
           <label class="form-label">Marks</label>
@@ -55,10 +55,15 @@
 
 <hr>
 
-<h4>Students (latest attendance & grade)</h4>
-<table class="table table-bordered">
-  <thead>
-    <tr><th>Roll</th><th>Name</th><th>Latest Attendance</th><th>Latest Grade</th></tr>
+<h4>Students (Latest Attendance & Total Grade)</h4>
+<table class="table table-bordered table-striped">
+  <thead class="table-light">
+    <tr>
+      <th>Roll</th>
+      <th>Name</th>
+      <th>Latest Attendance</th>
+      <th>Total Grade</th>
+    </tr>
   </thead>
   <tbody>
     {% for s in students %}
@@ -66,10 +71,28 @@
         <td>{{ s.roll_number }}</td>
         <td>{{ s.user.get_full_name|default:s.user.username }}</td>
         <td>{{ s.attendance_status }}</td>
-        <td>{{ s.grade_value }}</td>
+        <td>
+          {% if s.grade_value != "N/A" %}
+            <span class="
+              {% if s.grade_value == 'S' %}text-success fw-bold{% endif %}
+              {% if s.grade_value == 'A' %}text-success fw-bold{% endif %}
+              {% if s.grade_value == 'B' %}text-primary fw-bold{% endif %}
+              {% if s.grade_value == 'C' %}text-warning fw-bold{% endif %}
+              {% if s.grade_value == 'D' %}text-orange fw-bold{% endif %}
+              {% if s.grade_value == 'E' %}text-info fw-bold{% endif %}
+              {% if s.grade_value == 'F' %}text-danger fw-bold{% endif %}
+            ">
+              {{ s.grade_value }}
+            </span>
+          {% else %}
+            <span class="text-muted">No grades yet</span>
+          {% endif %}
+        </td>
       </tr>
     {% empty %}
-      <tr><td colspan="4">No students yet</td></tr>
+      <tr>
+        <td colspan="4" class="text-center">No students yet</td>
+      </tr>
     {% endfor %}
   </tbody>
 </table>

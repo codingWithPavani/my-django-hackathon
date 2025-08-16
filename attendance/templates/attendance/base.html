@@ -9,12 +9,15 @@
 <body class="p-4">
 <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{% url 'teacher_dashboard' %}">Smart Attendance</a>
+    <!-- <a class="navbar-brand" href="{% url 'teacher_dashboard' %}"></a> -->
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'login' %}">Sign UP</a>
     <div class="d-flex">
       {% if user.is_authenticated %}
         <span class="me-3">Hi, {{ user.get_username }}</span>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'logout' %}">Logout</a>
-  
+         <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm"
+           onclick="return confirm('Are you sure you want to delete your account? This cannot be undone.')">
+            Logout & Delete Account
+         </a>
       {% else %}
         <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Login</a>
       {% endif %}
