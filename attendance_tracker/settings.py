@@ -84,16 +84,16 @@ DATABASES = {
     }
 }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'my_hackathon_db',
-        'USER': 'my_hackathon_db_user',
-        'PASSWORD': '4FYAOWthKgVESxaTC5d4OM6giHHLAFZF',
-        'HOST': 'dpg-d2diubgdl3ps73b34vbg-a.oregon-postgres.render.com',
-        'PORT': '5432',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'my_hackathon_db',
+#         'USER': 'my_hackathon_db_user',
+#         'PASSWORD': '4FYAOWthKgVESxaTC5d4OM6giHHLAFZF',
+#         'HOST': 'dpg-d2diubgdl3ps73b34vbg-a.oregon-postgres.render.com',
+#         'PORT': '5432',
+#     }
+# }
 
 
 

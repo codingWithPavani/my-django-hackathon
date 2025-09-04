@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     roll_number = models.CharField(max_length=20)
@@ -13,7 +14,8 @@ class Student(models.Model):
     IoT = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name() or self.user.username} ({self.roll_number})"
+        return f"{self.user.get_full_name() or self.user.username} ({self.roll_number})"      
+    
 
 class Attendance(models.Model):
     STATUS_CHOICES = [("Present","Present"), ("Absent","Absent")]
@@ -32,3 +34,4 @@ class Grade(models.Model):
 
     class Meta:
         unique_together = ('student', 'subject')
+
