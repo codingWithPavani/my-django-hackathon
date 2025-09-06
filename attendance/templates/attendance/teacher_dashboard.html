@@ -1,19 +1,20 @@
 {% extends 'attendance/base.html' %}
+{% load custom_filters %}
+
 {% block content %}
 <h1>Teacher Dashboard</h1>
 
 <div class="row">
-  <!-- Save Attendance (single entry) -->
+  <!-- Save Attendance -->
   <div class="col-md-6">
     <div class="card mb-3 p-3">
       <h5>Save Attendance</h5>
-
-      {% if next_student %}
+      {% if next_student_attendance %}
         <form method="post" action="{% url 'save_attendance' %}">
           {% csrf_token %}
           <div class="mb-2">
             <label class="form-label">Roll Number</label>
-            <input class="form-control" name="roll_number" value="{{ next_student.roll_number }}" readonly>
+            <input class="form-control" name="roll_number" value="{{ next_student_attendance.roll_number }}" readonly>
           </div>
           <div class="mb-2">
             <label class="form-label">Status</label>
@@ -32,21 +33,37 @@
     </div>
   </div>
 
-  <!-- Save Grade (step-by-step) -->
+  <!-- Save Grade -->
   <div class="col-md-6">
     <div class="card mb-3 p-3">
       <h5>Save Grade</h5>
 
-      {% if current_student_roll and next_subject %}
+      <!-- Exam Type Selection -->
+      <form method="get" class="mb-3">
+        <div class="mb-2">
+          <label class="form-label">Exam Type</label>
+          <select class="form-select" name="exam_type" onchange="this.form.submit()">
+            {% for exam in exam_types %}
+              <option value="{{ exam }}" {% if exam == selected_exam_type %}selected{% endif %}>{{ exam }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+
+      {% if next_student_grade %}
         <form method="post" action="{% url 'save_grade' %}">
           {% csrf_token %}
           <div class="mb-2">
             <label class="form-label">Roll Number</label>
-            <input class="form-control" name="roll_number" value="{{ current_student_roll }}" readonly>
+            <input class="form-control" name="roll_number" value="{{ next_student_grade.roll_number }}" readonly>
           </div>
           <div class="mb-2">
             <label class="form-label">Subject</label>
             <input class="form-control" name="subject" value="{{ next_subject }}" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Exam Type</label>
+            <input class="form-control" name="exam_type" value="{{ selected_exam_type }}" readonly>
           </div>
           <div class="mb-2">
             <label class="form-label">Marks</label>
@@ -56,7 +73,7 @@
         </form>
       {% else %}
         <div class="alert alert-success mb-0">
-          ✅ All grades completed for all students!
+          ✅ All grades entered for all students for {{ selected_exam_type }}!
         </div>
       {% endif %}
     </div>
@@ -65,14 +82,16 @@
 
 <hr>
 
-<h4>Students (Latest Attendance & Total Grade)</h4>
+<h4>Students (Latest Attendance - {{ today }})</h4>
 <table class="table table-bordered table-striped">
   <thead class="table-light">
     <tr>
       <th>Roll</th>
       <th>Name</th>
       <th>Latest Attendance</th>
-      <th>Total Grade</th>
+      <th>Mid1</th>
+      <th>Mid2</th>
+      <th>Semester</th>
     </tr>
   </thead>
   <tbody>
@@ -80,28 +99,65 @@
       <tr>
         <td>{{ s.roll_number }}</td>
         <td>{{ s.user.get_full_name|default:s.user.username }}</td>
-        <td>{{ s.attendance_status }}</td>
+        <td>{{ s.attendance_status|default:"N/A" }}</td>
+
+        <!-- Mid1 Grade -->
         <td>
-          {% if s.grade_value != "N/A" %}
+          {% if s.mid1_grade != "N/A" %}
             <span class="
-              {% if s.grade_value == 'S' %}text-success fw-bold{% endif %}
-              {% if s.grade_value == 'A' %}text-success fw-bold{% endif %}
-              {% if s.grade_value == 'B' %}text-primary fw-bold{% endif %}
-              {% if s.grade_value == 'C' %}text-warning fw-bold{% endif %}
-              {% if s.grade_value == 'D' %}text-orange fw-bold{% endif %}
-              {% if s.grade_value == 'E' %}text-info fw-bold{% endif %}
-              {% if s.grade_value == 'F' %}text-danger fw-bold{% endif %}
+              {% if s.mid1_grade == 'S' or s.mid1_grade == 'A' %}text-success fw-bold{% endif %}
+              {% if s.mid1_grade == 'B' %}text-primary fw-bold{% endif %}
+              {% if s.mid1_grade == 'C' %}text-warning fw-bold{% endif %}
+              {% if s.mid1_grade == 'D' %}text-orange fw-bold{% endif %}
+              {% if s.mid1_grade == 'E' %}text-info fw-bold{% endif %}
+              {% if s.mid1_grade == 'F' %}text-danger fw-bold{% endif %}
             ">
-              {{ s.grade_value }}
+              {{ s.mid1_grade }}
             </span>
           {% else %}
-            <span class="text-muted">No grades yet</span>
+            <span class="text-muted">No grades</span>
+          {% endif %}
+        </td>
+
+        <!-- Mid2 Grade -->
+        <td>
+          {% if s.mid2_grade != "N/A" %}
+            <span class="
+              {% if s.mid2_grade == 'S' or s.mid2_grade == 'A' %}text-success fw-bold{% endif %}
+              {% if s.mid2_grade == 'B' %}text-primary fw-bold{% endif %}
+              {% if s.mid2_grade == 'C' %}text-warning fw-bold{% endif %}
+              {% if s.mid2_grade == 'D' %}text-orange fw-bold{% endif %}
+              {% if s.mid2_grade == 'E' %}text-info fw-bold{% endif %}
+              {% if s.mid2_grade == 'F' %}text-danger fw-bold{% endif %}
+            ">
+              {{ s.mid2_grade }}
+            </span>
+          {% else %}
+            <span class="text-muted">No grades</span>
+          {% endif %}
+        </td>
+
+        <!-- Semester Grade -->
+        <td>
+          {% if s.sem_grade != "N/A" %}
+            <span class="
+              {% if s.sem_grade == 'S' or s.sem_grade == 'A' %}text-success fw-bold{% endif %}
+              {% if s.sem_grade == 'B' %}text-primary fw-bold{% endif %}
+              {% if s.sem_grade == 'C' %}text-warning fw-bold{% endif %}
+              {% if s.sem_grade == 'D' %}text-orange fw-bold{% endif %}
+              {% if s.sem_grade == 'E' %}text-info fw-bold{% endif %}
+              {% if s.sem_grade == 'F' %}text-danger fw-bold{% endif %}
+            ">
+              {{ s.sem_grade }}
+            </span>
+          {% else %}
+            <span class="text-muted">No grades</span>
           {% endif %}
         </td>
       </tr>
     {% empty %}
       <tr>
-        <td colspan="4" class="text-center">No students yet</td>
+        <td colspan="6" class="text-center">No students yet</td>
       </tr>
     {% endfor %}
   </tbody>

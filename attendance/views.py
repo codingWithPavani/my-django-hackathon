@@ -1,3 +1,296 @@
+# from django.contrib.auth.decorators import login_required
+# from django.shortcuts import redirect, render
+# from .models import Student, Attendance, Grade
+# from django.contrib.auth import logout
+# from django.utils.dateparse import parse_date
+# from django.contrib import messages
+# from datetime import date
+
+# from django.shortcuts import render, redirect
+# from django.contrib.auth.decorators import login_required
+# from django.utils import timezone
+# from django.contrib import messages
+
+# from .models import Student, Attendance, Grade
+
+# EXAM_TYPES = {
+#     "Mid1": 30,
+#     "Mid2": 30,
+#     "Semester": 100,
+# }
+# SUBJECT_LIST = ["CD", "DWDM", "OOAD", "DAA", "IoT"]
+
+# def logout_view(request):
+#     logout(request)
+#     messages.success(request, "You have been logged out successfully.")
+#     return redirect('login')
+
+# @login_required
+# def redirect_user(request):
+#     if request.user.is_staff:
+#         return redirect('teacher_dashboard')
+#     else:
+#         return redirect('student_dashboard')
+
+# @login_required
+# def delete_and_logout(request):
+#     user = request.user
+#     logout(request)   # End the session first
+#     user.delete()     # Remove user account from DB
+#     return redirect('login')  # Redirect to login page after deletion
+
+# # ----------------------------
+# # Helper: Grade letter based on percentage
+# # ----------------------------
+# def calculate_grade(total, maximum):
+#     if maximum == 0:
+#         return "N/A"
+#     percentage = (total / maximum) * 100
+#     if percentage >= 90:
+#         return "S"
+#     elif percentage >= 80:
+#         return "A"
+#     elif percentage >= 70:
+#         return "B"
+#     elif percentage >= 60:
+#         return "C"
+#     elif percentage >= 50:
+#         return "D"
+#     elif percentage >= 35:
+#         return "E"
+#     else:
+#         return "F"
+
+# ATTENDANCE_START_DATE = date(2025, 9, 1)
+# # ----------------------------
+# # Student Dashboard
+# # ----------------------------
+# @login_required
+# def student_dashboard(request):
+#     if request.user.is_staff:
+#         return redirect('teacher_dashboard')
+
+#     try:
+#         student = Student.objects.get(user=request.user)
+#     except Student.DoesNotExist:
+#         return redirect('login')
+
+#     today = timezone.now().date()
+
+#     # Attendance
+#     total_days_since_start = (today - ATTENDANCE_START_DATE).days + 1
+#     if total_days_since_start < 0:
+#         total_days_since_start = 0
+
+#     latest_attendance = Attendance.objects.filter(student=student).order_by('-date').first()
+#     attendance_status = latest_attendance.status if latest_attendance else "N/A"
+
+#     present_count = Attendance.objects.filter(student=student, status='Present').count()
+#     absent_count = Attendance.objects.filter(student=student, status='Absent').count()
+
+#     # Grades split by exam type
+#     mid1_grades = Grade.objects.filter(student=student, exam_type__iexact='mid1')
+#     mid2_grades = Grade.objects.filter(student=student, exam_type__iexact='mid2')
+#     sem_grades = Grade.objects.filter(student=student, exam_type__iexact='semester')
+
+#     # Totals
+#     mid1_total = sum(g.marks for g in mid1_grades)
+#     mid2_total = sum(g.marks for g in mid2_grades)
+#     sem_total = sum(g.marks for g in sem_grades)
+
+#     # Max marks for each exam type
+#     mid1_max = len(mid1_grades) * 30
+#     mid2_max = len(mid2_grades) * 30
+#     sem_max = len(sem_grades) * 100
+
+#     # Grade letters
+#     mid1_grade = calculate_grade(mid1_total, mid1_max)
+#     mid2_grade = calculate_grade(mid2_total, mid2_max)
+#     sem_grade = calculate_grade(sem_total, sem_max)
+
+#     context = {
+#         'student': student,
+#         'attendance_status': attendance_status,
+#         'total_days': total_days_since_start,
+#         'present_count': present_count,
+#         'absent_count': absent_count,
+
+#         'mid1_grades': mid1_grades,
+#         'mid2_grades': mid2_grades,
+#         'sem_grades': sem_grades,
+
+#         'mid1_total_grade': mid1_total,
+#         'mid2_total_grade': mid2_total,
+#         'sem_total_grade': sem_total,
+
+#         'mid1_grade_letter': mid1_grade,
+#         'mid2_grade_letter': mid2_grade,
+#         'sem_grade_letter': sem_grade,
+#     }
+#     return render(request, 'attendance/student_dashboard.html', context)
+
+
+# # ----------------------------
+# # Teacher Dashboard
+# # ----------------------------
+# @login_required
+# def teacher_dashboard(request):
+#     if not request.user.is_staff:
+#         return redirect('student_dashboard')
+
+#     students = list(Student.objects.select_related('user').all().order_by('roll_number'))
+#     today = timezone.now().date()
+#     total_days_since_start = max((today - ATTENDANCE_START_DATE).days, 0)
+
+#     # Today's attendance
+#     latest_att_map = {att.student_id: att.status for att in Attendance.objects.filter(date=today)}
+
+#     # Next student for attendance
+#     next_student_attendance = None
+#     for student in students:
+#         if not Attendance.objects.filter(student=student, date=today).exists():
+#             next_student_attendance = student
+#             break
+
+#     # Selected exam type
+#     selected_exam_type = request.GET.get('exam_type', EXAM_TYPES[0])  # default to first
+
+#     # Grade calculation
+#     total_grade_map = {}
+#     for student in students:
+#         grades = Grade.objects.filter(student=student, exam_type=selected_exam_type)
+#         if not grades.exists():
+#             total_grade_map[student.id] = "N/A"
+#             continue
+
+#         # Dynamic max marks based on exam type
+#         if selected_exam_type.lower() in ['mid1', 'mid2']:
+#             max_marks = len(grades) * 30
+#         elif selected_exam_type.lower() == 'semester':
+#             max_marks = len(grades) * 100
+#         else:
+#             max_marks = len(grades) * 100  # fallback
+
+#         total = sum(g.marks for g in grades)
+#         grade_letter = calculate_grade(total, max_marks)
+#         total_grade_map[student.id] = grade_letter
+
+#     # Attach data to each student
+#     for s in students:
+#         s.attendance_status = latest_att_map.get(s.id, "N/A")
+#         s.grade_value = total_grade_map.get(s.id, "N/A")
+#         s.present_count = Attendance.objects.filter(student=s, status='Present').count()
+#         s.absent_count = Attendance.objects.filter(student=s, status='Absent').count()
+#         s.total_days = total_days_since_start
+
+#     # Next student + subject for grading
+#     next_student_grade = None
+#     next_subject = None
+#     for student in students:
+#         ungraded_subjects = [
+#             subject for subject in SUBJECT_LIST
+#             if not Grade.objects.filter(student=student, subject=subject, exam_type=selected_exam_type).exists()
+#         ]
+#         if ungraded_subjects:
+#             next_student_grade = student
+#             next_subject = ungraded_subjects[0]
+#             break
+
+#     return render(request, 'attendance/teacher_dashboard.html', {
+#         'students': students,
+#         'subjects': SUBJECT_LIST,
+#         'exam_types': EXAM_TYPES,
+#         'next_student_grade': next_student_grade,
+#         'next_subject': next_subject,
+#         'next_student_attendance': next_student_attendance,
+#         'selected_exam_type': selected_exam_type,
+#         'today': today
+#     })
+
+
+# # ----------------------------
+# # Save Grade
+# # ----------------------------
+# @login_required
+# def save_grade(request):
+#     if request.method == 'POST':
+#         roll_number = request.POST.get('roll_number')
+#         subject = request.POST.get('subject')
+#         marks = request.POST.get('marks')
+#         exam_type = request.POST.get('exam_type')
+
+#         # Validate marks input
+#         try:
+#             marks = int(marks)
+#         except (ValueError, TypeError):
+#             messages.error(request, "Invalid marks value.")
+#             return redirect(f'/teacher/?exam_type={exam_type}')
+
+#         # Validate student
+#         try:
+#             student = Student.objects.get(roll_number=roll_number)
+#         except Student.DoesNotExist:
+#             messages.error(request, "Student not found.")
+#             return redirect(f'/teacher/?exam_type={exam_type}')
+
+#         # Prevent duplicate entry
+#         if Grade.objects.filter(student=student, subject=subject, exam_type=exam_type).exists():
+#             messages.error(
+#                 request,
+#                 f"{exam_type} marks for {subject} already entered for roll number {student.roll_number}."
+#             )
+#             return redirect(f'/teacher/?exam_type={exam_type}')
+
+#         # Save grade
+#         Grade.objects.create(student=student, subject=subject, marks=marks, exam_type=exam_type)
+#         messages.success(
+#             request,
+#             f"{exam_type} marks saved for roll number {student.roll_number} in {subject}."
+#         )
+#         return redirect(f'/teacher/?exam_type={exam_type}')
+
+
+
+# @login_required
+# def save_attendance(request):
+#     """
+#     Save attendance for the 'next student' in order.
+#     Prevents duplicates for today.
+#     """
+#     if request.method == 'POST':
+#         roll_number = request.POST.get('roll_number', '').strip()
+#         attendance_status = request.POST.get('attendance')
+#         date_str = request.POST.get('date', '')  # optional; default = today
+
+#         if not roll_number or not attendance_status:
+#             messages.error(request, "Roll number and attendance are required.")
+#             return redirect('teacher_dashboard')
+
+#         try:
+#             student = Student.objects.get(roll_number=roll_number)
+#         except Student.DoesNotExist:
+#             messages.error(request, f"Student with roll {roll_number} not found.")
+#             return redirect('teacher_dashboard')
+
+#         # Parse date or use today
+#         if date_str:
+#             try:
+#                 dt = parse_date(date_str)
+#             except:
+#                 dt = date.today()
+#         else:
+#             dt = date.today()
+
+#         # Prevent duplicate entries for same day
+#         if Attendance.objects.filter(student=student, date=dt).exists():
+#             messages.warning(request, f"Attendance already marked for {student.roll_number} on {dt}.")
+#         else:
+#             Attendance.objects.create(student=student, date=dt, status=attendance_status)
+#             messages.success(request, f"Attendance saved for {student.user.get_full_name() or student.user.username}.")
+
+#     return redirect('teacher_dashboard')
+
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from .models import Student, Attendance, Grade
@@ -5,25 +298,112 @@ from django.contrib.auth import logout
 from django.utils.dateparse import parse_date
 from django.contrib import messages
 from datetime import date
+from django.utils import timezone
 
+# Exam types and max marks
+EXAM_TYPES = ["Mid1", "Mid2", "Semester"]
+EXAM_MAX_MARKS = {
+    "Mid1": 30,
+    "Mid2": 30,
+    "Semester": 100,
+}
+SUBJECT_LIST = ["CD", "DWDM", "OOAD", "DAA", "IoT"]
 
+ATTENDANCE_START_DATE = date(2025, 9, 1)
 
+# ----------------------------
+# Helper: Grade letter
+# ----------------------------
+def calculate_grade(total, maximum):
+    if maximum == 0:
+        return "N/A"
+    percentage = (total / maximum) * 100
+    if percentage >= 90:
+        return "S"
+    elif percentage >= 80:
+        return "A"
+    elif percentage >= 70:
+        return "B"
+    elif percentage >= 60:
+        return "C"
+    elif percentage >= 50:
+        return "D"
+    elif percentage >= 35:
+        return "E"
+    else:
+        return "F"
+
+# ----------------------------
+# Logout & Redirect
+# ----------------------------
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out successfully.")
     return redirect('login')
 
+@login_required
+def redirect_user(request):
+    return redirect('teacher_dashboard' if request.user.is_staff else 'student_dashboard')
 
-# Set attendance start date
-ATTENDANCE_START_DATE = date(2025, 9, 1)
+@login_required
+def delete_and_logout(request):
+    user = request.user
+    logout(request)
+    user.delete()
+    return redirect('login')
+
+# ----------------------------
+# Student Dashboard
+# ----------------------------
+# @login_required
+# def student_dashboard(request):
+#     if request.user.is_staff:
+#         return redirect('teacher_dashboard')
+
+#     try:
+#         student = Student.objects.get(user=request.user)
+#     except Student.DoesNotExist:
+#         return redirect('login')
+
+#     today = timezone.now().date()
+
+#     # Attendance
+#     total_days_since_start = max((today - ATTENDANCE_START_DATE).days + 1, 0)
+#     latest_attendance = Attendance.objects.filter(student=student).order_by('-date').first()
+#     attendance_status = latest_attendance.status if latest_attendance else "N/A"
+#     present_count = Attendance.objects.filter(student=student, status='Present').count()
+#     absent_count = Attendance.objects.filter(student=student, status='Absent').count()
+
+#     # Grades by exam type
+#     grades_by_type = {}
+#     for exam in EXAM_TYPES:
+#         grades = Grade.objects.filter(student=student, exam_type__iexact=exam)
+#         total = sum(g.marks for g in grades)
+#         max_marks = sum(EXAM_MAX_MARKS[exam] for _ in grades)
+#         grade_letter = calculate_grade(total, max_marks)
+#         grades_by_type[exam] = {
+#             'grades': grades,
+#             'total': total,
+#             'max': max_marks,
+#             'letter': grade_letter
+#         }
+
+#     context = {
+#         'student': student,
+#         'attendance_status': attendance_status,
+#         'total_days': total_days_since_start,
+#         'present_count': present_count,
+#         'absent_count': absent_count,
+#         'grades_by_type': grades_by_type,
+#     }
+#     return render(request, 'attendance/student_dashboard.html', context)
+
 
 @login_required
 def student_dashboard(request):
-    # Ensure the logged-in user is a student, not a teacher
     if request.user.is_staff:
         return redirect('teacher_dashboard')
 
-    # Get the Student object for the logged-in user
     try:
         student = Student.objects.get(user=request.user)
     except Student.DoesNotExist:
@@ -31,84 +411,222 @@ def student_dashboard(request):
 
     today = timezone.now().date()
 
-    # Calculate total days from ATTENDANCE_START_DATE
-    total_days_since_start = (today - ATTENDANCE_START_DATE).days + 1
-    if total_days_since_start < 0:
-        total_days_since_start = 0
-
-    # Latest attendance
+    # Attendance
+    total_days_since_start = max((today - ATTENDANCE_START_DATE).days + 1, 0)
     latest_attendance = Attendance.objects.filter(student=student).order_by('-date').first()
     attendance_status = latest_attendance.status if latest_attendance else "N/A"
-
-    # Count Present and Absent days
     present_count = Attendance.objects.filter(student=student, status='Present').count()
     absent_count = Attendance.objects.filter(student=student, status='Absent').count()
 
-    # Get all grades for the student
-    grades = Grade.objects.filter(student=student)
+    # Grades split by exam type
+    mid1_grades = Grade.objects.filter(student=student, exam_type__iexact='Mid1')
+    mid2_grades = Grade.objects.filter(student=student, exam_type__iexact='Mid2')
+    sem_grades = Grade.objects.filter(student=student, exam_type__iexact='Semester')
 
-    # Calculate grade value
-    if grades.exists():
-        subject_marks = {g.subject: g.marks for g in grades}
+    # Totals
+    mid1_total_grade = sum(g.marks for g in mid1_grades)
+    mid2_total_grade = sum(g.marks for g in mid2_grades)
+    sem_total_grade = sum(g.marks for g in sem_grades)
 
-        # Fail if any subject < 40
-        if any(m < 40 for m in subject_marks.values()):
-            total_grade = "F"
-        else:
-            total_marks = sum(subject_marks.values())
-            average = total_marks / len(subject_marks)
+    # Max marks
+    mid1_max = len(mid1_grades) * EXAM_MAX_MARKS['Mid1'] if mid1_grades else 30
+    mid2_max = len(mid2_grades) * EXAM_MAX_MARKS['Mid2'] if mid2_grades else 30
+    sem_max = len(sem_grades) * EXAM_MAX_MARKS['Semester'] if sem_grades else 100
 
-            if average >= 90:
-                total_grade = "A"
-            elif average >= 80:
-                total_grade = "B"
-            elif average >= 70:
-                total_grade = "C"
-            elif average >= 60:
-                total_grade = "D"
-            else:
-                total_grade = "F"
-    else:
-        total_grade = "N/A"
+    # Grade letters
+    mid1_grade_letter = calculate_grade(mid1_total_grade, mid1_max)
+    mid2_grade_letter = calculate_grade(mid2_total_grade, mid2_max)
+    sem_grade_letter = calculate_grade(sem_total_grade, sem_max)
 
     context = {
         'student': student,
         'attendance_status': attendance_status,
-        'grades': grades,
-        'total_grade': total_grade,
         'total_days': total_days_since_start,
         'present_count': present_count,
         'absent_count': absent_count,
+        'attendance_start_date': ATTENDANCE_START_DATE,
+
+        'mid1_grades': mid1_grades,
+        'mid2_grades': mid2_grades,
+        'sem_grades': sem_grades,
+
+        'mid1_total_grade': mid1_total_grade,
+        'mid2_total_grade': mid2_total_grade,
+        'sem_total_grade': sem_total_grade,
+
+        'mid1_max': mid1_max,
+        'mid2_max': mid2_max,
+        'sem_max': sem_max,
+
+        'mid1_grade_letter': mid1_grade_letter,
+        'mid2_grade_letter': mid2_grade_letter,
+        'sem_grade_letter': sem_grade_letter,
     }
+
     return render(request, 'attendance/student_dashboard.html', context)
 
 
+# ----------------------------
+# Teacher Dashboard
+# ----------------------------
 @login_required
-def redirect_user(request):
-    if request.user.is_staff:
-        return redirect('teacher_dashboard')
-    else:
+def teacher_dashboard(request):
+    if not request.user.is_staff:
         return redirect('student_dashboard')
 
+    students = Student.objects.select_related('user').all().order_by('roll_number')
+    today = timezone.now().date()
+    total_days_since_start = max((today - ATTENDANCE_START_DATE).days, 0)
+
+    # Attendance mapping
+    latest_att_map = {att.student_id: att.status for att in Attendance.objects.filter(date=today)}
+
+    # Next student for attendance
+    next_student_attendance = None
+    for student in students:
+        if not Attendance.objects.filter(student=student, date=today).exists():
+            next_student_attendance = student
+            break
+
+    # Selected exam type
+    selected_exam_type = request.GET.get('exam_type', EXAM_TYPES[0])
+
+    # Total grades for each student
+    total_grade_map = {}
+    for student in students:
+        grades = Grade.objects.filter(student=student, exam_type__iexact=selected_exam_type)
+        if grades.exists():
+            max_marks = sum(EXAM_MAX_MARKS[selected_exam_type] for _ in grades)
+            total = sum(g.marks for g in grades)
+            total_grade_map[student.id] = calculate_grade(total, max_marks)
+        else:
+            total_grade_map[student.id] = "N/A"
+
+    # Attach attendance & grades
+    for s in students:
+        s.attendance_status = latest_att_map.get(s.id, "N/A")
+        s.grade_value = total_grade_map.get(s.id, "N/A")
+        s.present_count = Attendance.objects.filter(student=s, status='Present').count()
+        s.absent_count = Attendance.objects.filter(student=s, status='Absent').count()
+        s.total_days = total_days_since_start
+
+
+          # Grades per exam type
+        mid1 = Grade.objects.filter(student=s, exam_type__iexact='Mid1')
+        mid2 = Grade.objects.filter(student=s, exam_type__iexact='Mid2')
+        sem = Grade.objects.filter(student=s, exam_type__iexact='Semester')
+
+        s.mid1_grade = calculate_grade(sum(g.marks for g in mid1), EXAM_MAX_MARKS['Mid1']) if mid1.exists() else "N/A"
+        s.mid2_grade = calculate_grade(sum(g.marks for g in mid2), EXAM_MAX_MARKS['Mid2']) if mid2.exists() else "N/A"
+        s.sem_grade = calculate_grade(sum(g.marks for g in sem), EXAM_MAX_MARKS['Semester']) if sem.exists() else "N/A"
+
+    # Next student + subject for grading
+    next_student_grade = None
+    next_subject = None
+    for student in students:
+        ungraded_subjects = [
+            subject for subject in SUBJECT_LIST
+            if not Grade.objects.filter(student=student, subject=subject, exam_type__iexact=selected_exam_type).exists()
+        ]
+        if ungraded_subjects:
+            next_student_grade = student
+            next_subject = ungraded_subjects[0]
+            break
+
+    context = {
+        'students': students,
+        'subjects': SUBJECT_LIST,
+        'exam_types': EXAM_TYPES,
+        'next_student_grade': next_student_grade,
+        'next_subject': next_subject,
+        'next_student_attendance': next_student_attendance,
+        'selected_exam_type': selected_exam_type,
+        'today': today,
+    }
+
+    return render(request, 'attendance/teacher_dashboard.html', context)
+
+# def teacher_dashboard(request):
+#     students = Student.objects.all()
+
+#     # Calculate total days since attendance start
+#     ATTENDANCE_START_DATE = date.today()  # or your start date
+#     total_days_since_start = (date.today() - ATTENDANCE_START_DATE).days + 1
+
+#     for student in students:
+#         # Fetch grades per exam type
+#         mid1_grades = Grade.objects.filter(student=student, exam_type__iexact='Mid1')
+#         mid2_grades = Grade.objects.filter(student=student, exam_type__iexact='Mid2')
+#         sem_grades = Grade.objects.filter(student=student, exam_type__iexact='Semester')
+
+#         # Calculate total marks per exam
+#         mid1_total = sum(g.marks for g in mid1_grades)
+#         mid2_total = sum(g.marks for g in mid2_grades)
+#         sem_total = sum(g.marks for g in sem_grades)
+
+#         # Max marks per exam
+#         mid1_max = EXAM_MAX_MARKS['Mid1']
+#         mid2_max = EXAM_MAX_MARKS['Mid2']
+#         sem_max = EXAM_MAX_MARKS['Semester']
+
+#         # Assign grades to student object
+#         student.mid1_grade = calculate_grade(mid1_total, mid1_max) if mid1_grades else "N/A"
+#         student.mid2_grade = calculate_grade(mid2_total, mid2_max) if mid2_grades else "N/A"
+#         student.sem_grade = calculate_grade(sem_total, sem_max) if sem_grades else "N/A"
+
+#         # Attendance counts
+#         student.present_count = Attendance.objects.filter(student=student, status='Present').count()
+#         student.absent_count = Attendance.objects.filter(student=student, status='Absent').count()
+#         student.total_days = total_days_since_start
+
+#     context = {
+#         'students': students
+#     }
+#     return render(request, 'attendance/teacher_dashboard.html', context)
+
+# ----------------------------
+# Save Grade
+# ----------------------------
 @login_required
-def delete_and_logout(request):
-    user = request.user
-    logout(request)   # End the session first
-    user.delete()     # Remove user account from DB
-    return redirect('login')  # Redirect to login page after deletion
+def save_grade(request):
+    if request.method == 'POST':
+        roll_number = request.POST.get('roll_number')
+        subject = request.POST.get('subject')
+        marks = request.POST.get('marks')
+        exam_type = request.POST.get('exam_type')
 
+        # Validate marks
+        try:
+            marks = int(marks)
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid marks value.")
+            return redirect(f'/teacher/?exam_type={exam_type}')
 
+        # Validate student
+        try:
+            student = Student.objects.get(roll_number=roll_number)
+        except Student.DoesNotExist:
+            messages.error(request, "Student not found.")
+            return redirect(f'/teacher/?exam_type={exam_type}')
 
+        # Prevent duplicate
+        if Grade.objects.filter(student=student, subject=subject, exam_type__iexact=exam_type).exists():
+            messages.error(request, f"{exam_type} marks for {subject} already entered.")
+            return redirect(f'/teacher/?exam_type={exam_type}')
+
+        Grade.objects.create(student=student, subject=subject, marks=marks, exam_type=exam_type)
+        messages.success(request, f"{exam_type} marks saved for {student.roll_number} in {subject}.")
+        return redirect(f'/teacher/?exam_type={exam_type}')
+
+# ----------------------------
+# Save Attendance
+# ----------------------------
 @login_required
 def save_attendance(request):
-    """
-    Save attendance for the 'next student' in order.
-    Prevents duplicates for today.
-    """
     if request.method == 'POST':
         roll_number = request.POST.get('roll_number', '').strip()
         attendance_status = request.POST.get('attendance')
-        date_str = request.POST.get('date', '')  # optional; default = today
+        date_str = request.POST.get('date', '')
 
         if not roll_number or not attendance_status:
             messages.error(request, "Roll number and attendance are required.")
@@ -120,181 +638,12 @@ def save_attendance(request):
             messages.error(request, f"Student with roll {roll_number} not found.")
             return redirect('teacher_dashboard')
 
-        # Parse date or use today
-        if date_str:
-            try:
-                dt = parse_date(date_str)
-            except:
-                dt = date.today()
-        else:
-            dt = date.today()
+        dt = parse_date(date_str) if date_str else date.today()
 
-        # Prevent duplicate entries for same day
         if Attendance.objects.filter(student=student, date=dt).exists():
             messages.warning(request, f"Attendance already marked for {student.roll_number} on {dt}.")
         else:
             Attendance.objects.create(student=student, date=dt, status=attendance_status)
             messages.success(request, f"Attendance saved for {student.user.get_full_name() or student.user.username}.")
-
-    return redirect('teacher_dashboard')
-
-
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from datetime import date
-from .models import Student, Attendance, Grade
-
-ATTENDANCE_START_DATE = date(2025, 9, 1)
-
-# Define subjects in order
-SUBJECT_LIST = ['CD', 'DWDM', 'OOAD', 'DAA', 'IoT']
-
-
-@login_required
-def teacher_dashboard(request):
-    if not request.user.is_staff:
-        return redirect('student_dashboard')
-
-    students = list(Student.objects.select_related('user').all().order_by('roll_number'))
-    today = timezone.now().date()
-    total_days_since_start = max((today - ATTENDANCE_START_DATE).days, 0)
-
-    # Get attendance status
-    attended_ids = Attendance.objects.filter(date=today).values_list('student_id', flat=True)
-    next_student = None
-    for s in students:
-        if s.id not in attended_ids:
-            next_student = s
-            break
-
-    # Latest attendance map
-    latest_att_map = {att.student_id: att.status for att in Attendance.objects.order_by('-date')}
-
-    # Total grade map
-    total_grade_map = {}
-    for student in students:
-        grades = Grade.objects.filter(student=student)
-        if not grades.exists():
-            total_grade_map[student.id] = "N/A"
-            continue
-        marks_list = [g.marks for g in grades]
-        if any(m < 35 for m in marks_list):
-            grade_letter = "F"
-        else:
-            avg_marks = sum(marks_list) / len(marks_list)
-            if avg_marks >= 90:
-                grade_letter = "S"
-            elif avg_marks >= 80:
-                grade_letter = "A"
-            elif avg_marks >= 70:
-                grade_letter = "B"
-            elif avg_marks >= 60:
-                grade_letter = "C"
-            elif avg_marks >= 50:
-                grade_letter = "D"
-            elif avg_marks >= 35:
-                grade_letter = "E"
-            else:
-                grade_letter = "F"
-        total_grade_map[student.id] = grade_letter
-
-    # Attach attributes
-    for s in students:
-        s.attendance_status = latest_att_map.get(s.id, "N/A")
-        s.grade_value = total_grade_map.get(s.id, "N/A")
-        s.present_count = Attendance.objects.filter(student=s, status='Present').count()
-        s.absent_count = Attendance.objects.filter(student=s, status='Absent').count()
-        s.total_days = total_days_since_start
-
-    # Determine next subject for current student
-    next_subject = None
-    if 'current_student_roll' not in request.session:
-        request.session['current_student_roll'] = students[0].roll_number if students else None
-        request.session['subject_index'] = 0
-
-    if request.session.get('current_student_roll'):
-        try:
-            current_student = Student.objects.get(roll_number=request.session['current_student_roll'])
-            submitted_subjects = Grade.objects.filter(student=current_student).values_list('subject', flat=True)
-            for i, subj in enumerate(SUBJECT_LIST):
-                if subj not in submitted_subjects:
-                    next_subject = subj
-                    request.session['subject_index'] = i
-                    break
-            else:
-                # All subjects done, move to next student
-                next_student_index = students.index(current_student) + 1
-                if next_student_index < len(students):
-                    next_student_roll = students[next_student_index].roll_number
-                    request.session['current_student_roll'] = next_student_roll
-                    request.session['subject_index'] = 0
-                    next_subject = SUBJECT_LIST[0]
-                else:
-                    request.session['current_student_roll'] = None
-                    next_subject = None
-        except Student.DoesNotExist:
-            request.session['current_student_roll'] = None
-            next_subject = None
-
-    return render(request, 'attendance/teacher_dashboard.html', {
-        'students': students,
-        'next_student': next_student,
-        'current_student_roll': request.session.get('current_student_roll'),
-        'next_subject': next_subject,
-    })
-
-
-@login_required
-def save_grade(request):
-    if request.method == 'POST':
-        roll_number = request.POST.get('roll_number')
-        subject = request.POST.get('subject')
-        marks = request.POST.get('marks')
-
-        # Validate marks
-        try:
-            marks = int(marks)
-        except ValueError:
-            messages.error(request, "Invalid marks value.")
-            return redirect('teacher_dashboard')
-
-        # Get student
-        try:
-            student = Student.objects.get(roll_number=roll_number)
-        except Student.DoesNotExist:
-            messages.error(request, "Student not found.")
-            return redirect('teacher_dashboard')
-
-        # Check for duplicate subject entry
-        if Grade.objects.filter(student=student, subject=subject).exists():
-            messages.error(request, f"Grade for {subject} already exists for {student.roll_number}.")
-            return redirect('teacher_dashboard')
-
-        # Save grade
-        Grade.objects.create(student=student, subject=subject, marks=marks)
-        messages.success(request, f"Grade saved for {student.roll_number} in {subject}.")
-
-        # Update session for next subject
-        submitted_subjects = Grade.objects.filter(student=student).values_list('subject', flat=True)
-        next_subject = None
-        for subj in SUBJECT_LIST:
-            if subj not in submitted_subjects:
-                next_subject = subj
-                break
-
-        if next_subject is None:
-            # Move to next student
-            students = list(Student.objects.order_by('roll_number'))
-            try:
-                current_index = next(i for i, s in enumerate(students) if s.roll_number == roll_number)
-                if current_index + 1 < len(students):
-                    request.session['current_student_roll'] = students[current_index + 1].roll_number
-                else:
-                    request.session['current_student_roll'] = None
-            except StopIteration:
-                request.session['current_student_roll'] = None
 
     return redirect('teacher_dashboard')

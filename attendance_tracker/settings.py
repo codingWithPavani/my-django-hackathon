@@ -73,27 +73,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'attendance_tracker.wsgi.application'
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'hackathon_db',
-#         'USER': 'hackathon_user',
-#         'PASSWORD': 'pawany12',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'my_hackathon_db',
-        'USER': 'my_hackathon_db_user',
-        'PASSWORD': '4FYAOWthKgVESxaTC5d4OM6giHHLAFZF',
-        'HOST': 'dpg-d2diubgdl3ps73b34vbg-a.oregon-postgres.render.com',
+        'NAME': 'hackathon_db',
+        'USER': 'hackathon_user',
+        'PASSWORD': 'pawany12',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'my_hackathon_db',
+#         'USER': 'my_hackathon_db_user',
+#         'PASSWORD': '4FYAOWthKgVESxaTC5d4OM6giHHLAFZF',
+#         'HOST': 'dpg-d2diubgdl3ps73b34vbg-a.oregon-postgres.render.com',
+#         'PORT': '5432',
+#     }
+# }
 
 
 
@@ -147,3 +147,5 @@ LOGOUT_REDIRECT_URL = "login"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+SUBJECTS = ["CD", "DWDM", "OOAD", "DAA", "IoT"]

@@ -1,5 +1,7 @@
 {% extends 'attendance/base.html' %}
 
+{% load tz %}  {# to handle timezone-aware dates if needed #}
+
 {% block content %}
 <div class="container mt-4">
   <h2 class="text-center mb-4 text-primary">🎓 Student Dashboard</h2>
@@ -18,10 +20,13 @@
     <div class="col-md-6 mb-4">
       <div class="card border-success shadow-sm">
         <div class="card-body">
-          <h5 class="card-title text-success">📅 Attendance (starts from 1/9/2025)</h5>
+          <h5 class="card-title text-success">
+            📅 Attendance (starts from {{ attendance_start_date|date:"j/m/Y" }})
+          </h5>
           <p><strong>Total Days:</strong> {{ total_days }}</p>
           <p class="text-success"><strong>Present:</strong> {{ present_count }}</p>
           <p class="text-danger"><strong>Absent:</strong> {{ absent_count }}</p>
+          <p><strong>Latest Status:</strong> {{ attendance_status }}</p>
         </div>
       </div>
     </div>
@@ -30,17 +35,53 @@
     <div class="col-md-6 mb-4">
       <div class="card border-info shadow-sm">
         <div class="card-body">
-          <h5 class="card-title text-info">📊 Recent Grades</h5>
-          <ul class="list-group">
-            {% for g in grades %}
+          <h5 class="card-title text-info">📊 Grades</h5>
+
+          <!-- Mid1 -->
+          <h6 class="mt-2 text-primary">
+            📘 Mid1 (Total: {{ mid1_total_grade }} / {{ mid1_max }}) – Grade: {{ mid1_grade_letter }}
+          </h6>
+          <ul class="list-group mb-2">
+            {% for g in mid1_grades %}
               <li class="list-group-item d-flex justify-content-between">
                 <span>{{ g.subject }}</span>
-                <span class="badge bg-primary">{{ g.marks }}</span>
+                <span class="badge bg-primary">{{ g.marks }}/30</span>
               </li>
             {% empty %}
               <li class="list-group-item text-muted">No grades yet</li>
             {% endfor %}
           </ul>
+
+          <!-- Mid2 -->
+          <h6 class="mt-2 text-success">
+            📗 Mid2 (Total: {{ mid2_total_grade }} / {{ mid2_max }}) – Grade: {{ mid2_grade_letter }}
+          </h6>
+          <ul class="list-group mb-2">
+            {% for g in mid2_grades %}
+              <li class="list-group-item d-flex justify-content-between">
+                <span>{{ g.subject }}</span>
+                <span class="badge bg-success">{{ g.marks }}/30</span>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">No grades yet</li>
+            {% endfor %}
+          </ul>
+
+          <!-- Semester -->
+          <h6 class="mt-2 text-danger">
+            📕 Semester (Total: {{ sem_total_grade }} / {{ sem_max }}) – Grade: {{ sem_grade_letter }}
+          </h6>
+          <ul class="list-group mb-2">
+            {% for g in sem_grades %}
+              <li class="list-group-item d-flex justify-content-between">
+                <span>{{ g.subject }}</span>
+                <span class="badge bg-danger">{{ g.marks }}/100</span>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">No grades yet</li>
+            {% endfor %}
+          </ul>
+
         </div>
       </div>
     </div>
